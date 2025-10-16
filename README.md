@@ -17,7 +17,7 @@ Un sniffer et émetteur de trames pour le protocole iBUS utilisé par les équip
 
 ## 📸 Aperçu
 
-![Interface web iBUS Aldes Sniffer](doc/image/Screenshot%20.png)
+![Interface web iBUS Aldes Sniffer](doc/image/Screenshot.png)
 
 ```
 🔌 iBUS Aldes Sniffer/Sender (Raspberry Pi Pico)
