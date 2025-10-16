@@ -17,18 +17,7 @@ Un sniffer et émetteur de trames pour le protocole iBUS utilisé par les équip
 
 ## 📸 Aperçu
 
-```
-🔌 iBUS Aldes Sniffer/Sender (Raspberry Pi Pico)
-
-📥 Données reçues
-HEX: FD A0 09 A0 FF 01 FF FF 9F 75
-DEC: 253 160 9 160 255 1 255 255 159 117
-Longueur: 10 bytes
-
-📤 Envoyer une trame
-[Champ de saisie hexadécimal]
-[Bouton Envoyer sur le bus]
-```
+![Screenshot](doc/image/screenshot.png)
 
 ## 🔧 Matériel requis
 
