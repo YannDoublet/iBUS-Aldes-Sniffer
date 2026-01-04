@@ -9,11 +9,12 @@ Un sniffer et émetteur de trames pour le protocole iBUS utilisé par les équip
 ## 🎯 Fonctionnalités
 
 - ✅ **Capture en temps réel** des trames iBUS circulant sur le bus Aldes
+- 📜 **Historique horodaté** des 20 dernières trames reçues avec timestamp
 - 📊 **Affichage web** des données interceptées (format hexadécimal et décimal)
 - 📤 **Envoi de commandes** via formulaire web avec validation hexadécimale
 - 🎨 **Interface responsive** avec thème sombre type VS Code
 - 🌐 **Serveur web embarqué** accessible via WiFi
-- 🔄 **Mise à jour en temps réel** des données capturées
+- 🗑️ **Effacement de l'historique** en un clic
 
 ## 📸 Aperçu
 
@@ -130,7 +131,14 @@ http://192.168.x.x
 
 ### Capture de trames
 
-Les données reçues du bus s'affichent automatiquement dans la section **"📥 Données reçues"**.
+Les données reçues du bus s'affichent automatiquement dans la section **"Dernière trame"**.
+
+### Historique des trames
+
+- Les **20 dernières trames** sont conservées avec leur horodatage (HH:MM:SS)
+- L'historique s'affiche dans un tableau scrollable
+- Cliquez sur **"Effacer"** pour vider l'historique
+- L'horloge démarre à 00:00:00 au démarrage du Pico (pas de synchronisation NTP)
 
 ### Envoi de commandes
 
@@ -264,5 +272,18 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue sur GitHub
 
 ⭐ Si ce projet vous a été utile, n'hésitez pas à lui donner une étoile !
 
-**Version** : 1.0.0  
-**Dernière mise à jour** : Octobre 2024
+**Version** : 1.1.0  
+**Dernière mise à jour** : Janvier 2026
+
+## 📝 Changelog
+
+### v1.1.0 (Janvier 2026)
+- ✨ Ajout de l'historique horodaté des trames (20 dernières)
+- 🗑️ Bouton pour effacer l'historique
+- ⚡ Optimisation mémoire : envoi de la page web par morceaux
+- 🐛 Correction du problème de page blanche avec historique plein
+
+### v1.0.0 (Octobre 2024)
+- 🚀 Version initiale
+- Capture et affichage des trames iBUS
+- Envoi de commandes via interface web
