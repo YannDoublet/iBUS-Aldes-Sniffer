@@ -1,19 +1,37 @@
 # iBUS Aldes Sniffer/Sender
-# Copyright (c) 2024 Yann Doublet
+# Copyright (c) 2026 Yann Doublet
 # Licensed under the MIT License - see LICENSE file for details
 
-from machine import Pin, UART, reset
+from machine import Pin, UART, reset, RTC
 import network
 import socket
 import time
 
 serial_input = []
+frame_history = []  # Historique des trames reçues [(timestamp, data), ...]
+MAX_HISTORY = 50    # Nombre max de trames conservées
+
+# Initialisation RTC
+rtc = RTC()
 
 # Configuration UART pour Raspberry Pi Pico avec inversion TX
 uart0 = UART(0, baudrate=2400, bits=8, parity=0, stop=1, tx=Pin(0), rx=Pin(1), invert=UART.INV_TX)
 
-ssid = 'your_wifi_ssid'
-password = 'your_wifi_password'
+ssid = ''
+password = ''
+
+def get_timestamp():
+    """Retourne l'heure actuelle formatée HH:MM:SS"""
+    t = rtc.datetime()
+    return "{:02d}:{:02d}:{:02d}".format(t[4], t[5], t[6])
+
+def add_to_history(data):
+    """Ajoute une trame à l'historique avec horodatage"""
+    global frame_history
+    timestamp = get_timestamp()
+    frame_history.insert(0, (timestamp, list(data)))  # Insérer en début de liste
+    if len(frame_history) > MAX_HISTORY:
+        frame_history.pop()  # Supprimer la plus ancienne
 
 def send_ibus_frame(hex_string):
     """Envoie une trame sur le bus depuis une chaîne hexa"""
@@ -43,6 +61,16 @@ def web_page(message=""):
     else:
         data_hex = "En attente de données..."
         data_dec = ""
+    
+    # Générer l'historique HTML
+    history_html = ""
+    if frame_history:
+        for timestamp, data in frame_history:
+            hex_str = ' '.join('{:02X}'.format(x) for x in data)
+            history_html += '<tr><td class="timestamp">{}</td><td>{}</td><td>{} bytes</td></tr>\n'.format(
+                timestamp, hex_str, len(data))
+    else:
+        history_html = '<tr><td colspan="3" style="text-align:center;">Aucune trame enregistrée</td></tr>'
     
     # Afficher le message de statut si présent
     status_html = ""
@@ -76,8 +104,15 @@ def web_page(message=""):
             margin: 20px 0;
             border-left: 4px solid #4ec9b0;
         }}
+        .history-frame {{
+            background: #2d2d2d;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #dcdcaa;
+        }}
         h1 {{ color: #569cd6; }}
         h2 {{ color: #4ec9b0; }}
+        h3 {{ color: #dcdcaa; }}
         .label {{ color: #9cdcfe; font-weight: bold; }}
         input[type="text"] {{
             width: 100%;
@@ -100,6 +135,12 @@ def web_page(message=""):
         }}
         button:hover {{
             background: #005a9e;
+        }}
+        .btn-clear {{
+            background: #ce9178;
+        }}
+        .btn-clear:hover {{
+            background: #a57050;
         }}
         .message {{
             background: #2d2d2d;
@@ -124,6 +165,28 @@ def web_page(message=""):
             color: #007acc;
             text-decoration: none;
         }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }}
+        th, td {{
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #3d3d3d;
+        }}
+        th {{
+            background: #1e1e1e;
+            color: #9cdcfe;
+        }}
+        .timestamp {{
+            color: #ce9178;
+            white-space: nowrap;
+        }}
+        .history-container {{
+            max-height: 400px;
+            overflow-y: auto;
+        }}
     </style>
 </head>
 <body>
@@ -132,10 +195,23 @@ def web_page(message=""):
     {}
     
     <div class="frame">
-        <h2>📥 Données reçues</h2>
+        <h2>📥 Dernière trame reçue</h2>
         <p><span class="label">HEX:</span> {}</p>
         <p><span class="label">DEC:</span> {}</p>
         <p><span class="label">Longueur:</span> {} bytes</p>
+    </div>
+    
+    <div class="history-frame">
+        <h3>📜 Historique des trames ({} enregistrées)</h3>
+        <div class="history-container">
+            <table>
+                <tr><th>Heure</th><th>Trame (HEX)</th><th>Taille</th></tr>
+                {}
+            </table>
+        </div>
+        <form method="POST" action="/clear" style="margin-top: 15px;">
+            <button type="submit" class="btn-clear">🗑️ Effacer l'historique</button>
+        </form>
     </div>
     
     <div class="send-frame">
@@ -157,7 +233,7 @@ def web_page(message=""):
         <a href="/">🔄 Rafraîchir</a> | Auto-refresh désactivé pour permettre l'envoi de commandes
     </div>
 </body>
-</html>""".format(status_html, data_hex, data_dec, len(serial_input))
+</html>""".format(status_html, data_hex, data_dec, len(serial_input), len(frame_history), history_html)
     return html
 
 # Connexion WiFi
@@ -204,6 +280,7 @@ while True:
             data = uart0.read()
             if data:
                 serial_input = list(data)
+                add_to_history(data)  # Ajouter à l'historique
                 print("iBUS RX:", ' '.join('{:02X}'.format(x) for x in serial_input))
         
         # Serveur web non-bloquant avec timeout court
@@ -235,6 +312,11 @@ while True:
                                 success, msg = send_ibus_frame(hex_data)
                                 last_message = msg
                                 break
+                
+                # Traiter la requête POST pour effacer l'historique
+                elif "POST /clear" in requete:
+                    frame_history.clear()
+                    last_message = "Historique effacé"
                 
             except OSError as e:
                 if e.args[0] == 110:  # ETIMEDOUT
